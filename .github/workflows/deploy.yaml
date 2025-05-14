@@ -58,4 +58,57 @@ jobs:
         PROJECT_ID=$(gcloud config get-value project)
         # Define the full image name using Artifact Registry path
         # <<< IMPORTANT: 'wistia-pipeline-repo' must be an existing Artifact Registry repo in us-central1
+<<<<<<< HEAD
         # If you haven't created it, run: gcloud artifacts repositories create wist
+=======
+        # We confirmed this repo exists in your project previously.
+        IMAGE_NAME="us-central1-docker.pkg.dev/$PROJECT_ID/wistia-pipeline-repo/wistia-pipeline-job:latest"
+        # Submit the build context (.) to Cloud Build. Cloud Build uses the Dockerfile in the context.
+        # The --tag flag specifies the name and location to push the built image to.
+        gcloud builds submit . --tag $IMAGE_NAME --region=us-central1 # <<< Ensure region matches your AR repo and desired build region
+
+    - name: Deploy Cloud Run Job # Step 5: Deploy the Cloud Run Job using the new image
+      run: |-
+        # Get project ID from gcloud config
+        PROJECT_ID=$(gcloud config get-value project)
+        # Define the image name (same as used in build step)
+        IMAGE_NAME="us-central1-docker.pkg.dev/$PROJECT_ID/wistia-pipeline-repo/wistia-pipeline-job:latest" # <<< ADJUST repo name if different
+        # Define Cloud Run Job name and region
+        JOB_NAME="wistia-pipeline-job" # <<< Your Cloud Run Job Name
+        JOB_REGION="us-central1" # <<< Your Cloud Run Job Region
+
+        # Deploy (or update) the Cloud Run Job using the new image
+        # 'replace' is often used in CI/CD to apply updates from the job definition
+        gcloud run jobs replace ${JOB_NAME} \
+          --image ${IMAGE_NAME} \
+          --region ${JOB_REGION} \
+          --project ${PROJECT_ID}
+          # Add --set-env-vars VAR1=value1,VAR2=value2,... if you need to pass env vars to the JOB itself
+
+    # --- Cloud Function Deployment Steps ---
+    # Note: This assumes your Cloud Function code is in a folder named 'function-job-trigger'
+    - name: Deploy Cloud Function # Step 6: Deploy the Cloud Function
+      run: |-
+        # Navigate to the directory containing your Cloud Function code
+        cd ./function-job-trigger/
+        # Get project ID from gcloud config
+        PROJECT_ID=$(gcloud config get-value project)
+        # Define Function name and region
+        FUNCTION_NAME="trigger-wistia-job-function-v3" # <<< Your Cloud Function Name (Use the working v3 name)
+        FUNCTION_REGION="us-central1" # <<< Your Cloud Function Region
+        # Define environment variables for the Function (these are crucial for the function to know which job to trigger)
+        # These variables will be set on the deployed Cloud Function instance
+        FUNCTION_ENV_VARS="PROJECT_ID=${PROJECT_ID},JOB_REGION=${JOB_REGION},JOB_NAME=${JOB_NAME}" # Using variables defined in the previous step or hardcoded if preferred
+
+        # Deploy the Cloud Function
+        # This uses the Cloud Buildpacks implicitly for Python runtime
+        gcloud functions deploy ${FUNCTION_NAME} \
+            --runtime python310 \
+            --entry-point trigger_cloud_run_job \
+            --trigger-http \
+            --allow-unauthenticated \
+            --region ${FUNCTION_REGION} \
+            --set-env-vars ${FUNCTION_ENV_VARS} \
+            --project ${PROJECT_ID}
+            # Add --service-account=YOUR_FUNCTION_SA_EMAIL if not using the default App Engine SA
+>>>>>>> 9ffe61dafb5019dfc66c93625552a225bdd7881b
