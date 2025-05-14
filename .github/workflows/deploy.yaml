@@ -1,0 +1,110 @@
+# .github/workflows/deploy.yaml
+
+# This is the name of your GitHub Actions workflow that will appear in the UI
+name: Deploy Wistia Pipeline
+
+# This defines when the workflow should run
+on:
+  push:
+    # Configure the workflow to run on pushes to your primary branch
+    # <<< IMPORTANT: Make sure this matches your primary branch name (e.g., main or master)
+    branches:
+      - main
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  deploy:
+    # Configure the runner environment for this job
+    runs-on: ubuntu-latest
+
+    # Set permissions for the GITHUB_TOKEN to allow fetching the OIDC token for WIF
+    permissions:
+      contents: 'read' # Allows checking out the code
+      id-token: 'write' # Allows fetching the OIDC token needed for GCP authentication
+
+    # Steps define the sequence of tasks to be executed within the job
+    steps:
+    - name: Checkout Code # Step 1: Clone the repository code onto the runner VM
+      uses: actions/checkout@v4 # Uses the official action to check out your repo
+
+    - name: Authenticate to Google Cloud # Step 2: Authenticate using Workload Identity Federation
+      id: 'auth' # Assign an ID to this step
+      uses: 'google-github-actions/auth@v2' # Uses Google's official WIF authentication action
+      with:
+        # <<< Your actual GCP Project ID
+        project_id: 'wistia-data-pipeline-project'
+
+        # <<< Your FULL Workload Identity Provider ID from GCP
+        # Format: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL_ID/providers/PROVIDER_ID
+        # Use the Project Number you retrieved (991483477222), Pool ID (github-actions-pool),
+        # and the Provider ID that successfully created (gh-provider-1)
+        workload_identity_provider: 'projects/991483477222/locations/global/workloadIdentityPools/github-actions-pool/providers/gh-provider-1'
+
+        # <<< The email of the Service Account you created for CI/CD
+        service_account: 'github-actions-pipeline-sa@wistia-data-pipeline-project.iam.gserviceaccount.com'
+
+    - name: Set up gcloud CLI # Step 3: Install and configure the Google Cloud SDK CLI on the runner
+      uses: 'google-github-actions/setup-gcloud@v2'
+      with:
+        version: 'latest' # Use the latest version of the gcloud CLI
+
+    # --- Cloud Run Job Deployment Steps ---
+    # Note: This assumes your Cloud Run Job code and Dockerfile are in a folder named 'cloud-run-job'
+    - name: Build and Push Cloud Run Job Image # Step 4: Build & Push the Job Image via Cloud Build
+      run: |-
+        # Navigate to the directory containing your Cloud Run Job code and Dockerfile
+        cd ./cloud-run-job/
+        # Get the project ID from the authenticated gcloud configuration
+        PROJECT_ID=$(gcloud config get-value project)
+        # Define the full image name using Artifact Registry path
+        # <<< IMPORTANT: 'wistia-pipeline-repo' must be an existing Artifact Registry repo in us-central1
+        # We confirmed this repo exists in your project previously.
+        IMAGE_NAME="us-central1-docker.pkg.dev/$PROJECT_ID/wistia-pipeline-repo/wistia-pipeline-job:latest"
+        # Submit the build context (.) to Cloud Build. Cloud Build uses the Dockerfile in the context.
+        # The --tag flag specifies the name and location to push the built image to.
+        gcloud builds submit . --tag $IMAGE_NAME --region=us-central1 # <<< Ensure region matches your AR repo and desired build region
+
+    - name: Deploy Cloud Run Job # Step 5: Deploy the Cloud Run Job using the new image
+      run: |-
+        # Get project ID from gcloud config
+        PROJECT_ID=$(gcloud config get-value project)
+        # Define the image name (same as used in build step)
+        IMAGE_NAME="us-central1-docker.pkg.dev/$PROJECT_ID/wistia-pipeline-repo/wistia-pipeline-job:latest" # <<< ADJUST repo name if different
+        # Define Cloud Run Job name and region
+        JOB_NAME="wistia-pipeline-job" # <<< Your Cloud Run Job Name
+        JOB_REGION="us-central1" # <<< Your Cloud Run Job Region
+
+        # Deploy (or update) the Cloud Run Job using the new image
+        # 'replace' is often used in CI/CD to apply updates from the job definition
+        gcloud run jobs replace ${JOB_NAME} \
+          --image ${IMAGE_NAME} \
+          --region ${JOB_REGION} \
+          --project ${PROJECT_ID}
+          # Add --set-env-vars VAR1=value1,VAR2=value2,... if you need to pass env vars to the JOB itself
+
+    # --- Cloud Function Deployment Steps ---
+    # Note: This assumes your Cloud Function code is in a folder named 'function-job-trigger'
+    - name: Deploy Cloud Function # Step 6: Deploy the Cloud Function
+      run: |-
+        # Navigate to the directory containing your Cloud Function code
+        cd ./function-job-trigger/
+        # Get project ID from gcloud config
+        PROJECT_ID=$(gcloud config get-value project)
+        # Define Function name and region
+        FUNCTION_NAME="trigger-wistia-job-function-v3" # <<< Your Cloud Function Name (Use the working v3 name)
+        FUNCTION_REGION="us-central1" # <<< Your Cloud Function Region
+        # Define environment variables for the Function (these are crucial for the function to know which job to trigger)
+        # These variables will be set on the deployed Cloud Function instance
+        FUNCTION_ENV_VARS="PROJECT_ID=${PROJECT_ID},JOB_REGION=${JOB_REGION},JOB_NAME=${JOB_NAME}" # Using variables defined in the previous step or hardcoded if preferred
+
+        # Deploy the Cloud Function
+        # This uses the Cloud Buildpacks implicitly for Python runtime
+        gcloud functions deploy ${FUNCTION_NAME} \
+            --runtime python310 \
+            --entry-point trigger_cloud_run_job \
+            --trigger-http \
+            --allow-unauthenticated \
+            --region ${FUNCTION_REGION} \
+            --set-env-vars ${FUNCTION_ENV_VARS} \
+            --project ${PROJECT_ID}
+            # Add --service-account=YOUR_FUNCTION_SA_EMAIL if not using the default App Engine SA
