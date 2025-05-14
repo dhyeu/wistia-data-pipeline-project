@@ -1,0 +1,7 @@
+# List your Python dependencies here
+requests             # For making HTTP requests to the Wistia API
+google-cloud-bigquery # For interacting with Google BigQuery
+google-auth           # For handling authentication within Google Cloud (e.g., using ADC)
+python-dotenv         # Optional: For loading environment variables during local testing
+
+# You might need other libraries depending on your data processing logic
