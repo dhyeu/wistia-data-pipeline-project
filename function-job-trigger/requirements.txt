@@ -1,0 +1,3 @@
+google-cloud-run
+functions-framework
+google-auth

@@ -1,0 +1,22 @@
+# --- Configuration Variables (Define these first) ---
+# >>> REPLACE THESE WITH YOUR ACTUAL GCP DETAILS <<<
+$PROJECT_ID = "wistia-data-pipeline-project" # Your actual GCP Project ID
+$REGION = "us-central1"                     # The GCP region where your Artifact Registry repo is located (must match Cloud Run Job region)
+$REPO_NAME = "wistia-pipeline-repo"         # The name of your Artifact Registry repository
+$IMAGE_NAME = "wistia-pipeline-job"         # The name of your Docker image
+$IMAGE_TAG = "latest"                       # The tag of your Docker image
+
+# Full image path in Artifact Registry
+$IMAGE_PATH = "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME}:${IMAGE_TAG}"
+
+# --- Cloud Run Job Name ---
+$JOB_NAME = "wistia-pipeline-job"
+
+# Construct the environment variables string
+# Make sure you replace the placeholder WISTIA_API_TOKEN below
+$ENV_VARS = "WISTIA_API_TOKEN=0323ade64e13f79821bdc0f2a9410d9ec3873aa9df01f8a4a54d4e0f3dd2e6b4,GCS_BUCKET_NAME=wistia-raw-bucket-dea,PROJECT_ID=$PROJECT_ID" # <<< REPLACE 'YOUR_WISTIA_API_TOKEN' HERE >>>
+
+Write-Host "Configuration variables defined."
+Write-Host "Image Path: $($IMAGE_PATH)"
+Write-Host "Job Name: $($JOB_NAME)"
+Write-Host "Environment Variables String: $($ENV_VARS)"
