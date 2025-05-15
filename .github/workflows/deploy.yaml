@@ -58,9 +58,6 @@ jobs:
         PROJECT_ID=$(gcloud config get-value project)
         # Define the full image name using Artifact Registry path
         # <<< IMPORTANT: 'wistia-pipeline-repo' must be an existing Artifact Registry repo in us-central1
-<<<<<<< HEAD
-        # If you haven't created it, run: gcloud artifacts repositories create wist
-=======
         # We confirmed this repo exists in your project previously.
         IMAGE_NAME="us-central1-docker.pkg.dev/$PROJECT_ID/wistia-pipeline-repo/wistia-pipeline-job:latest"
         # Submit the build context (.) to Cloud Build. Cloud Build uses the Dockerfile in the context.
@@ -111,4 +108,3 @@ jobs:
             --set-env-vars ${FUNCTION_ENV_VARS} \
             --project ${PROJECT_ID}
             # Add --service-account=YOUR_FUNCTION_SA_EMAIL if not using the default App Engine SA
->>>>>>> 9ffe61dafb5019dfc66c93625552a225bdd7881b
