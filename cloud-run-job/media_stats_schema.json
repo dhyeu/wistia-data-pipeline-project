@@ -1,0 +1,110 @@
+[
+  {
+    "name": "id",
+    "type": "BIGNUMERIC",
+    "mode": "REQUIRED",
+    "description": "Unique identifier for the media"
+  },
+  {
+    "name": "name",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Name of the media"
+  },
+  {
+    "name": "type",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Type of media (e.g., Video, Audio)"
+  },
+  {
+    "name": "archived",
+    "type": "BOOL",
+    "mode": "NULLABLE",
+    "description": "Whether the media is archived"
+  },
+  {
+    "name": "created",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE",
+    "description": "Timestamp when the media was created"
+  },
+  {
+    "name": "updated",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE",
+    "description": "Timestamp when the media was last updated"
+  },
+  {
+    "name": "duration",
+    "type": "BIGNUMERIC",
+    "mode": "NULLABLE",
+    "description": "Duration of the media in seconds"
+  },
+  {
+    "name": "hashed_id",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Hashed ID of the media"
+  },
+  {
+    "name": "section",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Section field from Wistia API"
+  },
+  {
+    "name": "description",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Description of the media"
+  },
+  {
+    "name": "progress",
+    "type": "BIGNUMERIC",
+    "mode": "NULLABLE",
+    "description": "Progress of media processing (0-1, often as a decimal)"
+  },
+  {
+    "name": "status",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Processing status of the media"
+  },
+  {
+    "name": "thumbnail",
+    "type": "RECORD",
+    "mode": "NULLABLE",
+    "description": "Thumbnail details",
+    "fields": [
+      {"name": "url", "type": "STRING", "mode": "NULLABLE"},
+      {"name": "width", "type": "BIGNUMERIC", "mode": "NULLABLE"},
+      {"name": "height", "type": "BIGNUMERIC", "mode": "NULLABLE"}
+    ]
+  },
+  {
+    "name": "project",
+    "type": "RECORD",
+    "mode": "NULLABLE",
+    "description": "Project details",
+    "fields": [
+      {"name": "id", "type": "BIGNUMERIC", "mode": "NULLABLE"},
+      {"name": "name", "type": "STRING", "mode": "NULLABLE"},
+      {"name": "hashed_id", "type": "STRING", "mode": "NULLABLE"}
+    ]
+  },
+  {
+    "name": "assets",
+    "type": "RECORD",
+    "mode": "REPEATED",
+    "description": "List of media assets",
+    "fields": [
+      {"name": "url", "type": "STRING", "mode": "NULLABLE"},
+      {"name": "width", "type": "BIGNUMERIC", "mode": "NULLABLE"},
+      {"name": "height", "type": "BIGNUMERIC", "mode": "NULLABLE"},
+      {"name": "fileSize", "type": "BIGNUMERIC", "mode": "NULLABLE"},
+      {"name": "contentType", "type": "STRING", "mode": "NULLABLE"},
+      {"name": "type", "type": "STRING", "mode": "NULLABLE"}
+    ]
+  }
+]

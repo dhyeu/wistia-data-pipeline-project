@@ -1,4 +1,6 @@
+# Trigger deployment test
 import os
+import json
 import requests
 from google.cloud import bigquery
 from google.oauth2 import service_account # Might not be needed if using ADC
@@ -7,8 +9,8 @@ import google.auth # Recommended for ADC in Cloud Run
 # --- Configuration ---
 # Get Wistia API Key from environment variable
 # Make sure you configure this variable when deploying the Cloud Run Job
-WISTIA_API_KEY = os.environ.get('0323ade64e13f79821bdc0f2a9410d9ec3873aa9df01f8a4a54d4e0f3dd2e6b4')
-
+# Assuming you have `import os` at the top of your script
+WISTIA_API_KEY = os.environ.get('WISTIA_API_KEY')
 # BigQuery Configuration
 # Get Project ID from environment (set by Cloud Run) or gcloud config
 PROJECT_ID = os.environ.get('GCP_PROJECT', os.environ.get('CLOUD_PROJECT'))
@@ -44,7 +46,7 @@ def fetch_wistia_stats(api_key: str, endpoint: str):
     }
 
     all_data = []
-    url = f'{WISTIA_API_BASE_URL}/{endpoint}.json' # Example endpoint, adjust as needed
+    url = f'{WISTIA_API_BASE_URL}/{endpoint}' # Example endpoint, adjust as needed
 
     print(f"Fetching data from: {url}")
 
@@ -53,6 +55,7 @@ def fetch_wistia_stats(api_key: str, endpoint: str):
     # and loop through all pages until no more data is returned.
     # Example: initial_params = {'page': 1, 'per_page': 100}
     # Loop while the response contains data...
+    initial_params = {'page': 1, 'per_page': 100}
 
     try:
         response = requests.get(url, headers=headers) # Add params=initial_params
@@ -137,7 +140,7 @@ if __name__ == "__main__":
 
     # --- Fetch data ---
     # <<< ADJUST the endpoint based on the Wistia Stats API data you need (e.g., 'stats/media', 'stats/visits')
-    wistia_data = fetch_wistia_stats(WISTIA_API_KEY, 'stats/media') # Example: fetching media stats
+    wistia_data = fetch_wistia_stats(WISTIA_API_KEY, 'medias') # Example: fetching media stats
 
     if wistia_data is not None: # Check if fetching was successful
         # --- Load data into BigQuery ---
